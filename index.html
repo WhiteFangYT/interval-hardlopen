@@ -43,7 +43,14 @@ h2{font-size:17px;margin:26px 0 10px}
 .tip{background:var(--card);border-radius:14px;padding:12px 14px;font-size:14px;color:var(--mut);margin-top:22px}
 .tip b{color:var(--ink)}
 .go{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 30%)}
-.go button{display:block;width:100%;max-width:528px;margin:0 auto;height:62px;border:0;border-radius:16px;background:var(--run);color:#fff;font:800 26px "Barlow Condensed",sans-serif;letter-spacing:.5px}
+.gw{display:grid;grid-template-columns:1fr 1.3fr;gap:10px;max-width:528px;margin:0 auto}
+#sv{display:flex;align-items:center;justify-content:center;text-align:center;height:62px;border-radius:16px;background:var(--card);color:var(--ink);border:2px solid #fc4c02;font:800 20px/1.05 "Barlow Condensed",sans-serif;text-decoration:none;padding:0 8px}
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;z-index:5}#ov[hidden]{display:none}
+.ob{background:var(--bg);width:100%;max-width:560px;margin:0 auto;border-radius:22px 22px 0 0;padding:22px 18px calc(18px + env(safe-area-inset-bottom))}
+.ob h2{margin:0 0 6px;font:800 30px/1.1 "Barlow Condensed",sans-serif}.ob p{margin:0 0 14px}.ob .sm{font-size:14px;color:var(--mut);margin:14px 0 0}
+#ovs{width:100%;height:62px;border:0;border-radius:16px;background:var(--run);color:#fff;font:800 26px "Barlow Condensed",sans-serif}
+.lnk{width:100%;height:44px;margin-top:6px;border:0;background:none;color:var(--mut);font:600 16px Barlow,sans-serif}
+.go button{display:block;width:100%;height:62px;border:0;border-radius:16px;background:var(--run);color:#fff;font:800 26px "Barlow Condensed",sans-serif;letter-spacing:.5px}
 button:focus-visible,.sw:focus-visible{outline:3px solid var(--walk);outline-offset:2px}
 #run{position:fixed;inset:0;display:none;flex-direction:column;color:#fff;background:var(--warm);transition:background .35s;padding:max(16px,env(safe-area-inset-top)) 18px max(16px,env(safe-area-inset-bottom))}
 #run.on{display:flex}
@@ -97,7 +104,8 @@ button:focus-visible,.sw:focus-visible{outline:3px solid var(--walk);outline-off
 
   <div class="tip"><b>GPS:</b> binnen de Claude-app blokkeert de browser je locatie. Werkt het tempo meten niet, open de app dan via een losse link in Safari of Chrome.<br><br><b>Met Spotify:</b> start eerst je muziek, open dan deze app en druk op start. De piepjes klinken over je muziek heen. Houd het scherm aan, op iPhone werkt geluid niet als de stille modus aan staat. <b>Tip:</b> voeg deze pagina toe aan je beginscherm via Delen.</div>
 </main>
-<div class="go"><button id="start">Start training</button></div>
+<div class="go"><div class="gw"><a id="sv" href="strava://record/new/start">Start met Strava</a><button id="start">Start training</button></div></div>
+<div id="ov" hidden><div class="ob"><h2>Strava neemt op</h2><p>Strava is geopend en begint te meten. Ben je terug? Tik dan hieronder om je intervallen te starten.</p><button id="ovs">Start intervallen</button><button id="ovc" class="lnk">Annuleren</button><p class="sm">Ging Strava niet open? Dan staat Strava niet op deze telefoon, of je opent de app nog binnen Claude. Gebruik dan je GitHub-link in Safari of Chrome.</p></div></div>
 
 <section id="run" aria-live="polite">
   <div class="top"><span id="rd">Ronde 1/8</span><span id="dk" class="num"></span><span id="el" class="num">0:00 / 0:00</span></div>
@@ -267,11 +275,15 @@ function show(s,i){
 function finish(){
   clearInterval(iv);gpsStop();SND.done();$('run').className='on done';$('ph').textContent='Klaar!';$('tl').textContent=ms(tot);
   $('pc').innerHTML=(G.reduce((s,x)=>s+x.d/x.p,0)).toFixed(1).replace('.',',')+'<span>km geschat</span>';
-  $('nx').textContent='Goed gedaan. Druk op stop om terug te gaan.';
+  $('nx').textContent=strava?'Goed gedaan. Vergeet niet de opname in Strava te stoppen.':'Goed gedaan. Druk op stop om terug te gaan.';
   if(dist>50){$('mp').innerHTML=kmTxt(dist).replace(' km','<span>km gelopen</span>');$('ms').textContent='Gemiddeld '+ms(tot/dist*1000)+' /km';$('ms').className=''}$('rd').textContent='Training voltooid';$('pr').style.width='100%';$('pb').textContent='Opnieuw';G=null;
 }
-function stop(){clearInterval(iv);gpsStop();G=null;$('run').className='';try{wl&&wl.release()}catch(e){}}
+function stop(){clearInterval(iv);gpsStop();G=null;strava=false;$('run').className='';try{wl&&wl.release()}catch(e){}}
 $('start').onclick=start;
+let strava=false;
+$('sv').addEventListener('click',()=>{audio();strava=true;$('ov').hidden=false});
+$('ovs').onclick=()=>{$('ov').hidden=true;start()};
+$('ovc').onclick=()=>{$('ov').hidden=true;strava=false};
 $('sb').onclick=stop;
 $('pb').onclick=()=>{
   audio();
