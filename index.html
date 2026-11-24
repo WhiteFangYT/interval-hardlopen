@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#e2552d">
+<title>Interval hardlopen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: sportief, direct, leesbaar met bezweet gezicht op armlengte
+   IDEA: een stadionscorebord langs een atletiekbaan
+   PICTURE: de timer zelf, scherm vult zich met baanrood (rennen) of blauw (wandelen)
+   COLOUR and TYPE: tartan rood, baanblauw, wit; Barlow Condensed als scorebordcijfers
+   LAYOUT: één kolom, instellen boven, grote start, tijdens training volledig scherm */
+:root{color-scheme:light dark;--bg:light-dark(#fff,#111214);--ink:light-dark(#141414,#f4f4f4);--mut:light-dark(#5c5c5c,#a9a9a9);--card:light-dark(#f3f1ee,#1d1f22);--line:light-dark(#e2ded8,#2c2f33);--run:#e2552d;--walk:#2457d6;--warm:#3a3f47}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Barlow,system-ui,sans-serif;overflow-x:clip;-webkit-tap-highlight-color:transparent}
+.num,h1,.big{font-family:"Barlow Condensed",Barlow,sans-serif}
+#setup{max-width:560px;margin:0 auto;padding:max(20px,env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom))}
+.hero{background:var(--run);color:#fff;border-radius:20px;padding:20px 20px 18px;position:relative;overflow:hidden}
+.hero h1{margin:0;font-size:38px;line-height:1.05;font-weight:800}
+.hero p{margin:4px 0 0;opacity:.9}
+.lanes{position:absolute;inset:auto -10% -30px -10%;height:70px;background:repeating-linear-gradient(90deg,transparent 0 58px,rgba(255,255,255,.35) 58px 61px);transform:perspective(120px) rotateX(40deg);pointer-events:none}
+.sum{display:flex;gap:18px;margin-top:14px;position:relative}
+.sum div{font-size:13px;opacity:.9}.sum b{display:block;font:800 30px/1 "Barlow Condensed",sans-serif}
+h2{font-size:17px;margin:26px 0 10px}
+.pre{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x mandatory}
+.pre button{flex:none;scroll-snap-align:start;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:10px 14px;min-height:44px;font:600 15px Barlow,sans-serif;text-align:left}
+.pre button small{display:block;color:var(--mut);font-weight:400;font-size:13px}
+.pre button.on{border-color:var(--run)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.row label{font-weight:600}.row small{display:block;color:var(--mut);font-weight:400;font-size:13px}
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:44px;height:44px;border-radius:50%;border:0;background:var(--card);color:var(--ink);font:600 22px/1 Barlow,sans-serif}
+.step output{min-width:84px;text-align:center;font:800 26px/1 "Barlow Condensed",sans-serif;white-space:nowrap}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.sw{appearance:none;width:52px;height:32px;border-radius:16px;background:var(--line);position:relative;transition:background .2s;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw:checked{background:var(--run)}.sw:checked::after{transform:translateX(20px)}
+.tip{background:var(--card);border-radius:14px;padding:12px 14px;font-size:14px;color:var(--mut);margin-top:22px}
+.tip b{color:var(--ink)}
+.go{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 30%)}
+.go button{display:block;width:100%;max-width:528px;margin:0 auto;height:62px;border:0;border-radius:16px;background:var(--run);color:#fff;font:800 26px "Barlow Condensed",sans-serif;letter-spacing:.5px}
+button:focus-visible,.sw:focus-visible{outline:3px solid var(--walk);outline-offset:2px}
+#run{position:fixed;inset:0;display:none;flex-direction:column;color:#fff;background:var(--warm);transition:background .35s;padding:max(16px,env(safe-area-inset-top)) 18px max(16px,env(safe-area-inset-bottom))}
+#run.on{display:flex}
+#run.r{background:var(--run)}#run.w{background:var(--walk)}#run.done{background:#141414}
+.top{display:flex;justify-content:space-between;font-weight:600;font-size:17px;opacity:.95}
+.mid{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+#ph{font:800 clamp(40px,13vw,72px)/1 "Barlow Condensed",sans-serif;text-transform:uppercase;letter-spacing:1px}
+#tl{font:800 clamp(110px,38vw,220px)/.95 "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums;margin:6px 0}
+.pace{background:rgba(0,0,0,.22);border-radius:18px;padding:10px 22px 12px}
+.pace small{display:block;font-size:14px;opacity:.85}
+.paces{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:520px}
+.pace{padding:10px 8px 12px}
+#pc,#mp{font:800 clamp(46px,14vw,84px)/1 "Barlow Condensed",sans-serif;white-space:nowrap}
+#pc span,#mp span{font-size:.38em;font-weight:600;margin-left:3px}
+.me{background:rgba(0,0,0,.38)}
+#ms{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:99px;font-size:15px;background:rgba(255,255,255,.2)}
+#ms.ok{background:#fff;color:#1a7a3a}#ms.up{background:#ffd400;color:#141414}#ms.dn{background:#fff;color:#2457d6}
+#dk{font-size:20px}
+#nx{margin-top:16px;font-size:18px;opacity:.9}
+.bar{height:10px;background:rgba(255,255,255,.25);border-radius:5px;overflow:hidden;margin:14px 0}
+.bar i{display:block;height:100%;width:0;background:#fff}
+.ctl{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:10px}
+.ctl button{height:60px;border-radius:16px;border:0;background:rgba(255,255,255,.2);color:#fff;font:600 18px Barlow,sans-serif}
+.ctl #pb{background:#fff;color:#141414;font-weight:800;font-size:20px}
+#run.pz .mid{opacity:.55}
+@media(prefers-reduced-motion:reduce){#run,.sw,.sw::after{transition:none}}
+</style>
+</head>
+<body>
+<main id="setup">
+  <section class="hero">
+    <h1>Interval&shy;hardlopen</h1>
+    <p>Stel je schema en tempo in, druk op start en laat je muziek gewoon doorspelen.</p>
+    <div class="sum"><div><b class="num" id="sTot">0:00</b>totale tijd</div><div><b class="num" id="sKm">0,0</b>km geschat</div><div><b class="num" id="sRun">0:00</b>hardlopen</div></div>
+    <div class="lanes"></div>
+  </section>
+
+  <h2>Snel kiezen</h2>
+  <div class="pre" id="pre"></div>
+
+  <h2>Schema</h2>
+  <div id="f1"></div>
+  <h2>Tempo</h2>
+  <div id="f2"></div>
+  <div class="row"><label for="gp">Mijn tempo meten (GPS)<small id="gs">Laat zien hoe snel je echt gaat</small></label><input type="checkbox" class="sw" id="gp" checked></div>
+  <h2>Signalen</h2>
+  <div id="f3"></div>
+  <div class="row"><label for="cd">Aftellen<small>Korte tikjes in de laatste 3 seconden</small></label><input type="checkbox" class="sw" id="cd" checked></div>
+  <div class="row"><label for="vb">Trillen<small>Werkt op Android, niet op iPhone</small></label><input type="checkbox" class="sw" id="vb" checked></div>
+  <div class="row"><label>Geluid testen<small>Zo klinken de wissels</small></label><div class="step"><button id="t1" aria-label="Test hardloopsignaal" style="background:var(--run);color:#fff">▲</button><button id="t2" aria-label="Test wandelsignaal" style="background:var(--walk);color:#fff">▼</button></div></div>
+
+  <div class="tip"><b>GPS:</b> binnen de Claude-app blokkeert de browser je locatie. Werkt het tempo meten niet, open de app dan via een losse link in Safari of Chrome.<br><br><b>Met Spotify:</b> start eerst je muziek, open dan deze app en druk op start. De piepjes klinken over je muziek heen. Houd het scherm aan, op iPhone werkt geluid niet als de stille modus aan staat. <b>Tip:</b> voeg deze pagina toe aan je beginscherm via Delen.</div>
+</main>
+<div class="go"><button id="start">Start training</button></div>
+
+<section id="run" aria-live="polite">
+  <div class="top"><span id="rd">Ronde 1/8</span><span id="dk" class="num"></span><span id="el" class="num">0:00 / 0:00</span></div>
+  <div class="mid">
+    <div id="ph">Hardlopen</div>
+    <div id="tl">1:00</div>
+    <div class="paces">
+      <div class="pace"><small>Doel</small><div id="pc">6:00<span>/km</span></div></div>
+      <div class="pace me"><small>Jij nu</small><div id="mp">--:--<span>/km</span></div><b id="ms">GPS zoeken</b></div>
+    </div>
+    <div id="nx">Hierna: wandelen 1:30</div>
+  </div>
+  <div class="bar"><i id="pr"></i></div>
+  <div class="ctl"><button id="sb">Stop</button><button id="pb">Pauze</button><button id="kb">Volgende</button></div>
+</section>
+
+<script>
+{
+const $=id=>document.getElementById(id);
+const ms=s=>{s=Math.max(0,Math.round(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=String(s%60).padStart(2,'0');return h?h+':'+String(m).padStart(2,'0')+':'+x:m+':'+x};
+const F1=[
+ {k:'warm',l:'Warming-up',d:'Rustig wandelen',st:60,min:0,max:1200,f:s=>s?ms(s):'Uit'},
+ {k:'run',l:'Hardlopen',d:'Per interval',st:15,min:15,max:1800,f:ms,c:'var(--run)'},
+ {k:'walk',l:'Wandelen',d:'Per interval',st:15,min:15,max:900,f:ms,c:'var(--walk)'},
+ {k:'rounds',l:'Rondes',d:'Hardlopen + wandelen',st:1,min:1,max:30,f:n=>n+'×'},
+ {k:'cool',l:'Cooling-down',d:'Rustig uitwandelen',st:60,min:0,max:1200,f:s=>s?ms(s):'Uit'}];
+const F2=[
+ {k:'rp',l:'Hardlooptempo',d:'Minuten per km',st:5,min:180,max:600,f:ms,c:'var(--run)'},
+ {k:'wp',l:'Wandeltempo',d:'Minuten per km',st:15,min:420,max:1200,f:ms,c:'var(--walk)'}];
+const PRE=[
+ {n:'Beginner',d:'1 min / 1:30 × 8',v:{run:60,walk:90,rounds:8}},
+ {n:'Opbouw',d:'2 min / 1 min × 7',v:{run:120,walk:60,rounds:7}},
+ {n:'Gevorderd',d:'4 min / 1 min × 5',v:{run:240,walk:60,rounds:5}},
+ {n:'Snelheid',d:'30 s / 30 s × 12',v:{run:30,walk:30,rounds:12}},
+ {n:'Duur',d:'8 min / 1 min × 4',v:{run:480,walk:60,rounds:4}}];
+const F3=[{k:'vol',l:'Volume',d:'5 is het hardst',st:1,min:1,max:5,f:n=>n+'/5'}];
+let S={warm:300,run:60,walk:90,rounds:8,cool:300,rp:360,wp:600,cd:true,vb:true,vol:5,gps:true};
+try{Object.assign(S,JSON.parse(localStorage.getItem('ivl')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('ivl',JSON.stringify(S))}catch(e){}};
+
+const rowHtml=f=>`<div class="row"><label>${f.c?`<span class="dot" style="background:${f.c}"></span>`:''}${f.l}<small>${f.d}</small></label><div class="step"><button data-k="${f.k}" data-d="-1" aria-label="${f.l} minder">−</button><output id="o_${f.k}"></output><button data-k="${f.k}" data-d="1" aria-label="${f.l} meer">+</button></div></div>`;
+$('f1').innerHTML=F1.map(rowHtml).join('');$('f2').innerHTML=F2.map(rowHtml).join('');$('f3').innerHTML=F3.map(rowHtml).join('');
+$('pre').innerHTML=PRE.map((p,i)=>`<button data-p="${i}">${p.n}<small>${p.d}</small></button>`).join('');
+const ALL=[...F1,...F2,...F3];
+
+function segs(){
+  const a=[];
+  if(S.warm)a.push({t:'warm',n:'Warming-up',d:S.warm,p:S.wp});
+  for(let i=1;i<=S.rounds;i++){a.push({t:'r',n:'Hardlopen',d:S.run,p:S.rp,i});a.push({t:'w',n:'Wandelen',d:S.walk,p:S.wp,i})}
+  if(S.cool)a.push({t:'warm',n:'Cooling-down',d:S.cool,p:S.wp});
+  return a;
+}
+function render(){
+  ALL.forEach(f=>$('o_'+f.k).textContent=f.f(S[f.k]));
+  const g=segs(),tot=g.reduce((s,x)=>s+x.d,0),km=g.reduce((s,x)=>s+x.d/x.p,0);
+  $('sTot').textContent=ms(tot);$('sKm').textContent=km.toFixed(1).replace('.',',');$('sRun').textContent=ms(S.run*S.rounds);
+  document.querySelectorAll('.pre button').forEach((b,i)=>{const v=PRE[i].v;b.classList.toggle('on',v.run==S.run&&v.walk==S.walk&&v.rounds==S.rounds)});
+  $('cd').checked=S.cd;$('vb').checked=S.vb;$('gp').checked=S.gps;
+}
+let hold;
+function bump(k,d){const f=ALL.find(x=>x.k==k);S[k]=Math.min(f.max,Math.max(f.min,S[k]+d*f.st));render();save();if(k=='vol'){audio();tone(880,0,.3)}}
+document.addEventListener('pointerdown',e=>{const b=e.target.closest('[data-k]');if(!b)return;e.preventDefault();const k=b.dataset.k,d=+b.dataset.d;bump(k,d);clearInterval(hold);let n=0;hold=setInterval(()=>{if(++n>3)bump(k,d)},120)});
+['pointerup','pointercancel','pointerleave'].forEach(t=>document.addEventListener(t,()=>clearInterval(hold)));
+$('pre').addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(!b)return;Object.assign(S,PRE[b.dataset.p].v);render();save()});
+$('cd').onchange=e=>{S.cd=e.target.checked;save()};$('vb').onchange=e=>{S.vb=e.target.checked;save()};
+$('gp').onchange=e=>{S.gps=e.target.checked;save();if(S.gps)gpsTest()};
+
+/* geluid: Web Audio mengt met Spotify in plaats van het te stoppen */
+let ac,bus,mk;
+function audio(){
+  try{if(navigator.audioSession)navigator.audioSession.type='transient'}catch(e){}
+  try{
+    if(!ac){
+      ac=new (window.AudioContext||window.webkitAudioContext)();
+      const c=ac.createDynamicsCompressor();
+      c.threshold.value=-24;c.knee.value=0;c.ratio.value=12;c.attack.value=.002;c.release.value=.1;
+      bus=ac.createGain();mk=ac.createGain();bus.connect(c).connect(mk).connect(ac.destination);
+    }
+    mk.gain.value=[.6,1,1.6,2.4,3.2][S.vol-1];
+    if(ac.state!='running')ac.resume();
+  }catch(e){}
+}
+/* twee oscillatoren per toon, door een compressor: veel luider zonder kraak */
+function tone(f,t0,dur){
+  if(!ac)return;const t=ac.currentTime+t0,g=ac.createGain();
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.9,t+.01);g.gain.setValueAtTime(.9,t+dur-.06);g.gain.linearRampToValueAtTime(0,t+dur);
+  g.connect(bus);
+  [['square',0],['sawtooth',7]].forEach(([ty,dt])=>{const o=ac.createOscillator();o.type=ty;o.frequency.value=f;o.detune.value=dt;o.connect(g);o.start(t);o.stop(t+dur+.02)});
+}
+const seq=a=>a.forEach(([f,t,d])=>tone(f,t,d));
+const vib=p=>{if(S.vb&&navigator.vibrate)try{navigator.vibrate(p)}catch(e){}};
+const SND={
+  r:()=>{seq([[660,0,.25],[880,.35,.25],[1175,.7,.3]]);vib([250,100,250,100,300])},
+  w:()=>{seq([[1047,0,.25],[784,.35,.25],[523,.7,.3]]);vib([600,100,300])},
+  warm:()=>{seq([[523,0,.45],[659,.5,.5]]);vib(1000)},
+  tick:()=>tone(1000,0,.18),
+  done:()=>{seq([[523,0,.2],[659,.25,.2],[784,.5,.2],[1047,.75,.25]]);vib([300,100,300,100,200])}
+};
+$('t1').onclick=()=>{audio();SND.r()};$('t2').onclick=()=>{audio();SND.w()};
+
+/* GPS: tempo over de laatste 20 seconden, afstand met filter op slechte punten */
+let wid=null,pts=[],dist=0,lastP=null,gErr='';
+const R=6371000,rad=x=>x*Math.PI/180;
+function hav(a,b){const dla=rad(b.la-a.la),dlo=rad(b.lo-a.lo),h=Math.sin(dla/2)**2+Math.cos(rad(a.la))*Math.cos(rad(b.la))*Math.sin(dlo/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function errTxt(e){return e&&e.code==1?'Geen toegang tot locatie':'GPS niet beschikbaar'}
+function gpsTest(){
+  if(!navigator.geolocation){$('gs').textContent='Deze browser heeft geen GPS';return}
+  $('gs').textContent='Locatie controleren…';
+  try{navigator.geolocation.getCurrentPosition(p=>{$('gs').textContent='GPS werkt, nauwkeurig tot '+Math.round(p.coords.accuracy)+' m'},e=>{$('gs').textContent=errTxt(e)+'. Open de app via een losse link, zie uitleg hieronder.'},{enableHighAccuracy:true,timeout:15000})}catch(e){$('gs').textContent='GPS niet beschikbaar'}
+}
+function gpsStart(){
+  pts=[];dist=0;lastP=null;gErr='';
+  if(!S.gps){gErr='GPS uit';return}
+  if(!navigator.geolocation){gErr='Geen GPS';return}
+  try{wid=navigator.geolocation.watchPosition(onPos,e=>{gErr=errTxt(e)},{enableHighAccuracy:true,maximumAge:0,timeout:20000})}catch(e){gErr='Geen GPS'}
+}
+function gpsStop(){try{if(wid!=null)navigator.geolocation.clearWatch(wid)}catch(e){}wid=null}
+function onPos(p){
+  const c=p.coords;gErr='';if(c.accuracy>35)return;
+  const q={t:p.timestamp/1000,la:c.latitude,lo:c.longitude};
+  if(lastP&&!pAt){const d=hav(lastP,q),dt=q.t-lastP.t;if(dt>0&&d/dt<9)dist+=d}
+  lastP=q;pts.push(q);while(pts.length>2&&pts[0].t<q.t-20)pts.shift();
+}
+function myPace(target){
+  const mp=$('mp'),st=$('ms');st.className='';
+  if(gErr){mp.innerHTML='--:--<span>/km</span>';st.textContent=gErr;return}
+  if(!lastP||Date.now()/1000-lastP.t>12||pts.length<3){mp.innerHTML='--:--<span>/km</span>';st.textContent='GPS zoeken';return}
+  let d=0;for(let i=1;i<pts.length;i++)d+=hav(pts[i-1],pts[i]);
+  const dt=pts[pts.length-1].t-pts[0].t;
+  if(dt<5||d/dt<.6){mp.innerHTML='--:--<span>/km</span>';st.textContent='Stilstand';return}
+  const p=dt/d*1000,df=p-target;mp.innerHTML=ms(p)+'<span>/km</span>';
+  if(Math.abs(df)<=10){st.textContent='Op tempo';st.className='ok'}
+  else if(df>0){st.textContent='Sneller';st.className='up'}
+  else{st.textContent='Rustiger';st.className='dn'}
+}
+const kmTxt=m=>(m/1000).toFixed(2).replace('.',',')+' km';
+
+/* training: tijd op basis van klok, dus inhalen na achtergrond werkt */
+let G,tot,t0,paused=0,pAt=0,cur=-1,lastTick=-1,iv,wl;
+async function lock(){try{wl=await navigator.wakeLock.request('screen')}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState=='visible'&&G&&!pAt)lock()});
+const now=()=>performance.now()/1000;
+function elapsed(){return (pAt||now())-t0-paused}
+function start(){
+  audio();G=segs();tot=G.reduce((s,x)=>s+x.d,0);t0=now();paused=0;pAt=0;cur=-1;lastTick=-1;
+  $('run').className='on';$('pb').textContent='Pauze';$('dk').textContent='';gpsStart();lock();clearInterval(iv);iv=setInterval(tick,100);tick();
+}
+function tick(){
+  const e=elapsed();
+  if(e>=tot){finish();return}
+  let i=0,acc=0;while(acc+G[i].d<=e){acc+=G[i].d;i++}
+  const s=G[i],left=acc+s.d-e;
+  if(i!=cur){cur=i;lastTick=-1;show(s,i);SND[s.t]()}
+  const L=Math.ceil(left);
+  if(S.cd&&L<=3&&L>=1&&L!=lastTick&&i<G.length-1&&s.d>5){lastTick=L;SND.tick()}
+  $('tl').textContent=ms(L);$('el').textContent=ms(e)+' / '+ms(tot);
+  $('pr').style.width=(e/tot*100)+'%';
+  myPace(s.p);if(lastP||dist)$('dk').textContent=kmTxt(dist);
+}
+function show(s,i){
+  $('run').className='on '+s.t+(pAt?' pz':'');
+  $('ph').textContent=s.n;$('pc').innerHTML=ms(s.p)+'<span>/km</span>';
+  $('rd').textContent=s.i?`Ronde ${s.i}/${S.rounds}`:s.n;
+  const n=G[i+1];$('nx').textContent=n?`Hierna: ${n.n.toLowerCase()} ${ms(n.d)}`:'Laatste stuk!';
+  try{document.querySelector('meta[name=theme-color]').content=s.t=='r'?'#e2552d':s.t=='w'?'#2457d6':'#3a3f47'}catch(e){}
+}
+function finish(){
+  clearInterval(iv);gpsStop();SND.done();$('run').className='on done';$('ph').textContent='Klaar!';$('tl').textContent=ms(tot);
+  $('pc').innerHTML=(G.reduce((s,x)=>s+x.d/x.p,0)).toFixed(1).replace('.',',')+'<span>km geschat</span>';
+  $('nx').textContent='Goed gedaan. Druk op stop om terug te gaan.';
+  if(dist>50){$('mp').innerHTML=kmTxt(dist).replace(' km','<span>km gelopen</span>');$('ms').textContent='Gemiddeld '+ms(tot/dist*1000)+' /km';$('ms').className=''}$('rd').textContent='Training voltooid';$('pr').style.width='100%';$('pb').textContent='Opnieuw';G=null;
+}
+function stop(){clearInterval(iv);gpsStop();G=null;$('run').className='';try{wl&&wl.release()}catch(e){}}
+$('start').onclick=start;
+$('sb').onclick=stop;
+$('pb').onclick=()=>{
+  audio();
+  if(!G){start();return}
+  if(pAt){paused+=now()-pAt;pAt=0;$('pb').textContent='Pauze';$('run').classList.remove('pz');lock()}
+  else{pAt=now();$('pb').textContent='Verder';$('run').classList.add('pz')}
+};
+$('kb').onclick=()=>{
+  audio();if(!G)return;const e=elapsed();let acc=0;for(const s of G){acc+=s.d;if(acc>e)break}
+  paused-=acc-e+.01;tick();
+};
+render();
+}
+</script>
+</body>
+</html>
